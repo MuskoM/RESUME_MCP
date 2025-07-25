@@ -1,0 +1,45 @@
+[project]
+name = "resume-mcp"
+version = "0.1.0"
+description = "MCP server for resume related tasks"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "httpx>=0.28.1",
+    "mcp[cli]>=1.12.1",
+    "scrapy>=2.13.3",
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.12.4",
+    "ty>=0.0.1a15",
+]
+
+[tool.ruff.lint]
+select = [
+    "E1", # pydocstyle errors
+    "E2",
+    "E5",
+    "F", # pyflakes
+    "B",
+    "UP", # pyupgrade
+    "SIM", # flake8-simplify
+    "ASYNC", # flake8-async
+    "I", # isort
+    "D2", # pydocstyle
+    "D3",
+    "D4",
+    ]
+
+unfixable = ["B"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.format]
+quote-style = "double"
+docstring-code-format = true
+
+
+
