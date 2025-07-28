@@ -1,42 +1,42 @@
+import logging
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
-import logging
-from typing import Protocol, TypeVar
 
-import httpx
 from scrapy.selector import Selector
 
-
-class BaseSelector(ABC):
-    @abstractmethod
-    def build(self) -> str: ...
+from shared import Offer, ProgrammingLanguage
 
 
 class Parser(ABC):
-    @abstractmethod
-    def get_multiple_entries(self, selector: BaseSelector) -> Iterable[str]: ...
+    def __init__(self, html_text: str) -> None:
+        self._html_text = html_text
 
     @abstractmethod
-    def get_single_entry(self, selector: BaseSelector) -> str: ...
-
-
-class ScrapySelector(Selector):
-    def __init__(self, xpath: str) -> None:
-        self.query = xpath
-
-    def build(self) -> str:
-        return self.query
+    def extract_offers(
+        self, link_query: str, name_query: str, tags_query: str
+    ) -> Iterable[Offer]:
+        return []
 
 
 class ScrapyParser(Parser):
-    def __init__(self, html_text: str) -> None:
-        logging.info(f"PAGE: {html_text}")
-        self.page = Selector(text=html_text)
+    def __init__(self, html_text: str, offer_query: str) -> None:
+        super().__init__(html_text)
+        self.page = Selector(text=self._html_text)
+        self.offers = self.page.xpath(offer_query).getall()
 
-    def get_single_entry(self, selector: ScrapySelector) -> str:
-        elements = self.page.xpath(selector.build())
-        return elements.get()
+    def extract_offers(
+        self, link_query: str, name_query: str, tags_query: str
+    ) -> Iterable[Offer]:
+        for offer in self.offers:
+            yield self.extract_offer_info(offer, link_query, name_query, tags_query)
 
-    def get_multiple_entries(self, selector: ScrapySelector) -> Iterable[str]:
-        elements = self.page.xpath(selector.build())
-        return elements.getall()
+    def extract_offer_info(
+        self, offer_html: str, link_query: str, name_query: str, tags_query: str
+    ) -> Offer:
+        offer = Selector(text=offer_html)
+        return Offer(
+            url=offer.xpath(link_query).get(),
+            tags=offer.xpath(tags_query).getall(),
+            language=ProgrammingLanguage.python,
+            name=offer.xpath(name_query).get(),
+        )

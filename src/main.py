@@ -4,8 +4,8 @@ import httpx
 from mcp.server.fastmcp import FastMCP
 
 from exceptions import HTTPServerError
-from shared import ProgrammingLanguage
-from websites import BulldogJob, GenericPostingWebsite
+from shared import Criteria, ProgrammingLanguage
+from websites.posting import BulldogJob, GenericPostingWebsite
 
 logging.basicConfig(filename="server.log", level=logging.INFO)
 
@@ -20,9 +20,9 @@ async def fetch_page_content(page_url: str) -> str:
 
 
 @mcp.tool()
-async def get_page_info(page_url: str) -> str:
+async def get_offer_information(posting_url: str) -> str:
     try:
-        website = GenericPostingWebsite(page_url)
+        website = BulldogJob()
         return str({"name": website.host, "headers": website.headers})
     except HTTPServerError as ex:
         logging.error("Unable to fetch offer", exc_info=ex)
@@ -31,12 +31,20 @@ async def get_page_info(page_url: str) -> str:
 
 
 @mcp.tool()
-async def get_offers(programmingLanguage: ProgrammingLanguage) -> str:
+async def get_offers(
+    programmingLanguage: ProgrammingLanguage, criteria: Criteria, limit: int = 50
+) -> str:
+    logging.info(
+        f"Fetching offers for language: {programmingLanguage}, criteria: {criteria}"
+    )
     try:
         website = BulldogJob()
-        offers = await website.list_offers_for(programmingLanguage)
-        logging.info(f"Found offers {offers}")
-        return "\n".join(offers) if offers else "No offers found"
+        offers = await website.list_offers_for(programmingLanguage, criteria)
+        list_of_offers = []
+        for _ in range(limit):
+            list_of_offers.append(str(next(offers)))
+        logging.info(f"Found offers {len(list_of_offers)}")
+        return "\n\n".join(list_of_offers) if list_of_offers else "No offers found"
     except HTTPServerError as ex:
         logging.error("Unable to fetch offer", exc_info=ex)
         return "Unable to fetch offer"
