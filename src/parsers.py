@@ -1,6 +1,6 @@
 import logging
 from abc import ABC, abstractmethod
-from collections.abc import Iterable
+from collections.abc import Iterator
 
 from scrapy.selector import Selector
 
@@ -14,8 +14,7 @@ class Parser(ABC):
     @abstractmethod
     def extract_offers(
         self, link_query: str, name_query: str, tags_query: str
-    ) -> Iterable[Offer]:
-        return []
+    ) -> Iterator[Offer]: ...
 
 
 class ScrapyParser(Parser):
@@ -26,7 +25,7 @@ class ScrapyParser(Parser):
 
     def extract_offers(
         self, link_query: str, name_query: str, tags_query: str
-    ) -> Iterable[Offer]:
+    ) -> Iterator[Offer]:
         for offer in self.offers:
             yield self.extract_offer_info(offer, link_query, name_query, tags_query)
 

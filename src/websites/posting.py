@@ -1,6 +1,6 @@
 import logging
 from abc import ABC
-from collections.abc import Iterable
+from collections.abc import Iterable, Iterator
 from typing import Protocol
 
 import httpx
@@ -76,7 +76,7 @@ class BulldogJob(PostingWebsite):
 
     async def list_offers_for(
         self, language: ProgrammingLanguage, criteria: Criteria
-    ) -> Iterable[Offer]:
+    ) -> Iterator[Offer]:
         logging.info(f"Fetching offers for language: {language}, criteria: {criteria}")
         posting_page_url = f"{self.base_url}/companies/jobs/s/skills,{language}"
         async with httpx.AsyncClient(

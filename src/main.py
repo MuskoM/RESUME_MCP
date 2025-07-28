@@ -1,22 +1,54 @@
 import logging
+from datetime import datetime
+from uuid import UUID
 
-import httpx
 from mcp.server.fastmcp import FastMCP
 
+from db import get_db
 from exceptions import HTTPServerError
+from models import PostingModel
+from repositories import BaseDBRepository
+from schema import Posting
 from shared import Criteria, ProgrammingLanguage
-from websites.posting import BulldogJob, GenericPostingWebsite
+from websites.posting import BulldogJob
 
 logging.basicConfig(filename="server.log", level=logging.INFO)
 
 mcp = FastMCP()
 
 
-async def fetch_page_content(page_url: str) -> str:
-    async with httpx.AsyncClient() as c:
-        response = await c.get(page_url)
-        response.raise_for_status()
-        return response.read().decode()
+@mcp.resource(
+    "resumem://postings/",
+    name="List of postings for selected seniority",
+    mime_type="text/plain",
+)
+async def list_saved_postings() -> list:
+    with get_db() as session:
+        repo = BaseDBRepository(session, Posting)
+        saved_postings = repo.get_all()
+        logging.info(f"{saved_postings} - fetched")
+        return [PostingModel.model_validate(obj) for obj in saved_postings]
+
+
+@mcp.tool()
+async def save_posting(name: str, posting_url: str) -> None:
+    with get_db() as session:
+        repo = BaseDBRepository(session, Posting)
+        post = Posting(
+            name=name,
+            url=posting_url,
+            tags="hi,bye,ad,ai",
+            seniority="sennior",
+            scraped_on=datetime.now(),
+        )
+        repo.add_one(post)
+
+
+@mcp.tool()
+async def delete_posting(item_id: int | UUID) -> None:
+    with get_db() as session:
+        repo = BaseDBRepository(session, Posting)
+        repo.delete_one(item_id)
 
 
 @mcp.tool()
@@ -27,7 +59,6 @@ async def get_offer_information(posting_url: str) -> str:
     except HTTPServerError as ex:
         logging.error("Unable to fetch offer", exc_info=ex)
         return "Unable to fetch page name"
-    return website.website_host
 
 
 @mcp.tool()
